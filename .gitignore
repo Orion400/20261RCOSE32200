@@ -1,0 +1,18 @@
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Generated lab artifacts
+key.pem
+cert.pem
+recovered_key.pem
+weak_rsa_params.txt
+*.pcap
+*.pcapng
+
+# Local test output
+test-output/
+.tmp-demo/
