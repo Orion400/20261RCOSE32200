@@ -153,3 +153,78 @@ This demo only works under these conditions:
 6. The traffic is a local educational test.
 
 Do not generalize this to TLS 1.3 or ECDHE-based TLS 1.2. Those use forward secrecy, so a server long-term RSA key alone does not decrypt past sessions.
+
+## 11. Optional automated local runner
+
+The manual commands above remain the presentation path. For a quick local check of the same flow, run:
+
+```bash
+python3 03_run_local_demo.py
+```
+
+The runner checks the environment, creates `key.pem`, `cert.pem`, and `weak_rsa_params.txt`, recovers `recovered_key.pem`, starts the server, waits for `127.0.0.1:8443`, runs the client, and stops child processes before exiting.
+
+## 12. Optional loopback capture helper
+
+Packet capture is still optional and may require local Wireshark permissions. The helper is restricted to loopback capture and TCP port 8443 by default:
+
+```bash
+python3 04_capture_loopback.py --output demo_loopback.pcapng --duration 20
+```
+
+Start the capture before running the client. If `tshark` is available, analyze an existing capture:
+
+```bash
+python3 04_capture_loopback.py --analyze demo_loopback.pcapng
+```
+
+If your `tshark` version supports RSA key-list decryption for this static-RSA TLS 1.2 case, add the recovered key:
+
+```bash
+python3 04_capture_loopback.py --analyze demo_loopback.pcapng --recovered-key recovered_key.pem
+```
+
+Only treat the plaintext as verified when the helper reports that the expected plaintext was decoded by `tshark`.
+
+## 13. ECDHE_RSA negative control
+
+The original demo remains the static-RSA server and client on port 8443. An additional local control uses TLS 1.2 ECDHE_RSA on port 8444:
+
+Terminal 1:
+
+```bash
+python3 server_tls12_ecdhe.py
+```
+
+Terminal 2:
+
+```bash
+python3 client_tls12_ecdhe.py
+```
+
+This control demonstrates a protocol boundary: ECDHE_RSA uses RSA to authenticate the server certificate, while the session secret comes from ephemeral ECDH. The static-RSA private-key decryption path used in the main demo does not apply to this control. This does not make a broader claim about all possible attacks.
+
+## 14. Tests
+
+Run the focused test suite with:
+
+```bash
+python3 -m pytest
+```
+
+Some tests skip when the local OpenSSL build does not expose the legacy `AES128-SHA` cipher.
+
+## 15. Troubleshooting
+
+- If `00_check_environment.py` reports that port 8443 is in use, stop the other local process and retry.
+- If `AES128-SHA:@SECLEVEL=0` is rejected, use a lab machine whose OpenSSL build permits the legacy cipher for this local demo.
+- If Wireshark or `tshark` cannot capture loopback traffic, fix local capture permissions outside these scripts; they do not invoke `sudo`.
+- If Wireshark shows ECDHE or TLS 1.3, the RSA private-key decryption demonstration does not apply. The main server and client restrict TLS to 1.2 and request `AES128-SHA:@SECLEVEL=0`.
+
+## 16. Cleanup
+
+Generated files are intentionally not tracked by Git. Remove them when finished:
+
+```bash
+rm -f key.pem cert.pem weak_rsa_params.txt recovered_key.pem demo_loopback.pcapng
+```
