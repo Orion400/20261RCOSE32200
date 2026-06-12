@@ -158,9 +158,20 @@ def main() -> int:
     args = parse_args()
     try:
         if args.analyze:
-            result = analyze_capture(args.analyze, args.port, args.recovered_key)
+            result = analyze_capture(
+                args.analyze,
+                args.port,
+                args.recovered_key,
+            )
             print_analysis(result)
-            return 0 if result.ok_without_decryption() else 1
+            if not result.ok_without_decryption():
+                return 1
+            if (
+                args.recovered_key is not None
+                and result.plaintext_found is not True
+            ):
+                return 1
+            return 0
         return capture_loopback(args.output, args.interface, args.port, args.duration)
     except Exception as exc:
         print(f'[CAPTURE] error: {exc}')
