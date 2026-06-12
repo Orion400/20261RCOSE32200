@@ -87,7 +87,12 @@ def run_demo(host: str, port: int, timeout: float) -> list[StepResult]:
         results.append(run_step('generate materials', [py, '01_make_weak_rsa_materials.py'], timeout, ROOT))
         results.append(run_step('recover key', [py, '02_recover_from_cert_fermat.py'], timeout, ROOT))
         print('[DEMO] starting server')
-        ready_path = Path(tempfile.mkstemp(prefix='rsa_tls12_ready_', dir=ROOT)[1])
+        ready_fd, ready_name = tempfile.mkstemp(
+            prefix='rsa_tls12_ready_',
+            dir=ROOT,
+        )
+        os.close(ready_fd)
+        ready_path = Path(ready_name)
         ready_path.unlink(missing_ok=True)
         server = start_child([py, 'server_tls12_rsa.py', '--host', host, '--port', str(port), '--timeout', str(timeout), '--ready-file', str(ready_path)], ROOT)
         wait_for_ready_file(ready_path, server, timeout)
